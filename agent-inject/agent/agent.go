@@ -365,21 +365,6 @@ func ShouldInject(pod *corev1.Pod) (bool, error) {
 func (a *Agent) Patch() ([]byte, error) {
 	var patches []byte
 
-	// copy container volume mounts for use later
-	copiedVolumeMounts := make([]corev1.VolumeMount, 0)
-	if a.CopyVolumeMounts != "" {
-		for _, container := range a.Pod.Spec.Containers {
-			if container.Name == a.CopyVolumeMounts {
-				for _, volumeMount := range container.VolumeMounts {
-					// ignore Kubernetes service account token mounts
-					if volumeMount.MountPath != "/var/run/secrets/kubernetes.io/serviceaccount" {
-						copiedVolumeMounts = append(copiedVolumeMounts, *volumeMount.DeepCopy())
-					}
-				}
-			}
-		}
-	}
-
 	// Add a volume for the token sink
 	a.Patches = append(a.Patches, addVolumes(
 		a.Pod.Spec.Volumes,
@@ -431,7 +416,6 @@ func (a *Agent) Patch() ([]byte, error) {
 		if err != nil {
 			return patches, err
 		}
-		container.VolumeMounts = append(container.VolumeMounts, copiedVolumeMounts...)
 
 		containers := a.Pod.Spec.InitContainers
 
@@ -478,7 +462,6 @@ func (a *Agent) Patch() ([]byte, error) {
 		if err != nil {
 			return patches, err
 		}
-		container.VolumeMounts = append(container.VolumeMounts, copiedVolumeMounts...)
 		a.Patches = append(a.Patches, addContainers(
 			a.Pod.Spec.Containers,
 			[]corev1.Container{container},
@@ -562,4 +545,22 @@ func (a *Agent) vaultCliFlags() []string {
 	}
 
 	return flags
+}
+
+// copyVolumeMounts copies the specified container or init container's volume mounts.
+// Ignores any Kubernetes service account token mounts.
+func (a *Agent) copyVolumeMounts(targetContainerName string) []corev1.VolumeMount {
+	// Deep copy the pod spec so append doesn't mutate the original containers slice
+	podSpec := a.Pod.Spec.DeepCopy()
+	copiedVolumeMounts := make([]corev1.VolumeMount, 0)
+	for _, container := range append(podSpec.Containers, podSpec.InitContainers...) {
+		if container.Name == targetContainerName {
+			for _, volumeMount := range container.VolumeMounts {
+				if !strings.Contains(strings.ToLower(volumeMount.MountPath), "serviceaccount") {
+					copiedVolumeMounts = append(copiedVolumeMounts, volumeMount)
+				}
+			}
+		}
+	}
+	return copiedVolumeMounts
 }

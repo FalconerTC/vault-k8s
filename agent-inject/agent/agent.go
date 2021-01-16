@@ -509,7 +509,7 @@ func (a *Agent) Validate() error {
 	}
 
 	if a.ConfigMapName == "" {
-		if a.Vault.Role == "" {
+		if a.Vault.Role == "" && a.Vault.AuthType == DefaultVaultAuthType {
 			return errors.New("no Vault role found")
 		}
 

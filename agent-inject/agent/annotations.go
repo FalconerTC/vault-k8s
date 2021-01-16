@@ -543,7 +543,7 @@ func (a *Agent) authConfig() map[string]interface{} {
 			authConfig[param] = value
 		}
 	}
-	if len(authConfig) == 0 {
+	if len(authConfig) == 0 && a.Vault.AuthType == DefaultVaultAuthType {
 		authConfig["role"] = a.Vault.Role
 	}
 

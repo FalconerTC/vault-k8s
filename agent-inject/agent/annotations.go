@@ -191,6 +191,10 @@ const (
 
 	// AnnotationAgentCacheListenerPort configures the port the agent cache should listen on
 	AnnotationAgentCacheListenerPort = "vault.hashicorp.com/agent-cache-listener-port"
+
+	// AnnotationAgentCopyVolumeMounts is the name of the container in the Pod whose volume mounts
+	// should be copied into the Vault Agent init and/or sidecar containers
+	AnnotationAgentCopyVolumeMounts = "vault.hashicorp.com/agent-copy-volume-mounts"
 )
 
 type AgentConfig struct {
